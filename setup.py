@@ -18,7 +18,7 @@ setup(
         "torchmetrics>=0.5.0",
         "wandb>=0.12",
         "optuna>=2.10.0",
-        "torchtext=>0.10.0",
+        "torchtext>=0.10.0",
         "lightning-flash @ git+https://github.com/PyTorchLightning/lightning-flash.git#egg=lightning-flash[text]",
     ],
     packages=find_packages(),
