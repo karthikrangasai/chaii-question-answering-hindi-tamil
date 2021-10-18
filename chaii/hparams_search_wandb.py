@@ -87,7 +87,7 @@ if __name__ == "__main__":
                 ]
             },
             "batch_size": {"values": [4, 8, 16]},
-            "lr": {
+            "learning_rate": {
                 "distribution": "uniform",
                 "min": 1e-8,
                 "max": 1,
