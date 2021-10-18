@@ -11,6 +11,7 @@ def split_dataset(
     filepath: str = os.path.join(DATA_FOLDER_PATH, "train.csv"),
     fraction: float = 0.1,
 ) -> None:
+    fraction = 1 - fraction
     df = pd.read_csv(filepath)
 
     # Splitting data into train and val beforehand since preprocessing will be different for datasets.
