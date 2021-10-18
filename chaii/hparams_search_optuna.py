@@ -73,7 +73,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("-t", "--trails", type=int, default=1, required=False)
+    parser.add_argument("-t", "--trials", type=int, default=1, required=False)
     parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
     args = parser.parse_args()
 
