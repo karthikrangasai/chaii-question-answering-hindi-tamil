@@ -4,6 +4,7 @@ from dataclasses import asdict
 import wandb
 
 from torch.optim import Optimizer, Adam, AdamW
+from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     EarlyStopping,
@@ -14,12 +15,14 @@ from pytorch_lightning.loggers import WandbLogger
 from flash import Trainer
 from flash.text import QuestionAnsweringData
 
+
 from chaii.src.conf import ChaiiCompetitionConfiguration, WANDBLoggerConfiguration
 from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
 
 
 def train(config: ChaiiCompetitionConfiguration, debug: bool = False):
+    seed_everything(42)
     split_dataset()
     logger_configuration = WANDBLoggerConfiguration(
         group=f"{config.backbone}",

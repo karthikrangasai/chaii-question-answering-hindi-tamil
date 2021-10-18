@@ -1,16 +1,19 @@
 from argparse import ArgumentParser
 from datetime import datetime
 from functools import partial
+import os
 
 import optuna
 
 import torch
 from torch.optim import Optimizer, Adam, AdamW
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
+from pytorch_lightning import seed_everything
 
 from flash import Trainer
 from flash.core.finetuning import _DEFAULTS_FINETUNE_STRATEGIES
 from flash.text import QuestionAnsweringData
+from chaii import OPTUNA_LOGS_PATH
 
 from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
@@ -77,9 +80,10 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
     args = parser.parse_args()
 
+    seed_everything(42)
     split_dataset()
 
-    sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=17)
+    sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=42)
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 
     study = optuna.create_study(direction="maximize", sampler=sampler, pruner=pruner)
@@ -90,7 +94,10 @@ if __name__ == "__main__":
         gc_after_trial=True,
     )
 
-    with open(f"optuna_hparams_search.txt_{datetime.now()}", "w") as f:
+    with open(
+        os.path.join(OPTUNA_LOGS_PATH, f"optuna_hparams_search_{datetime.now()}.txt"),
+        "w",
+    ) as f:
         f.write(f"Number of finished trials: {len(study.trials)}\n")
         f.write("Best trial:\n")
         trial = study.best_trial
