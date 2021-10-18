@@ -26,7 +26,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         "backbone",
         ["xlm-roberta-base", "deepset/xlm-roberta-base-squad2", "ai4bharat/indic-bert"],
     )
-    learning_rate = trial.suggest_loguniform("learning_rate", 1e-8, 1)
+    learning_rate = trial.suggest_uniform("learning_rate", 1e-8, 1)
     finetuning_strategy = trial.suggest_categorical(
         "finetuning_strategy", ["no_freeze", "freeze"]
     )
@@ -79,17 +79,18 @@ if __name__ == "__main__":
 
     split_dataset()
 
+    sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=17)
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 
-    study = optuna.create_study(direction="maximize", pruner=pruner)
+    study = optuna.create_study(direction="maximize", sampler=sampler, pruner=pruner)
     study.optimize(
         partial(objective, num_epochs=args.epochs),
         n_trials=args.trials,
         timeout=600,
+        gc_after_trial=True,
     )
 
-    time = datetime.now()
-    with open(f"optuna_hparams_search.txt_{time.strftime()}", "w") as f:
+    with open(f"optuna_hparams_search.txt_{datetime.now()}", "w") as f:
         f.write(f"Number of finished trials: {len(study.trials)}\n")
         f.write("Best trial:\n")
         trial = study.best_trial
