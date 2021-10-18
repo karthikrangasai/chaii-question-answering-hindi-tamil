@@ -37,6 +37,7 @@ def sweep_iteration(num_epochs: int) -> float:
             backbone=backbone,
             learning_rate=learning_rate,
             optimizer=optimizer,
+            lr_scheduler=None,
             enable_ort=False,
         )
 

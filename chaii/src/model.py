@@ -1,21 +1,7 @@
 import torch
 
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Type, Union
-from torch.optim import Optimizer, Adam, AdamW
-from torch.optim.lr_scheduler import (
-    _LRScheduler,
-    StepLR,
-    MultiStepLR,
-    ReduceLROnPlateau,
-    CosineAnnealingWarmRestarts,
-)
-
-from torchmetrics.text.rouge import ROUGEScore
-from transformers import (
-    get_cosine_schedule_with_warmup,
-    get_linear_schedule_with_warmup,
-    get_cosine_with_hard_restarts_schedule_with_warmup,
-)
+from torch.optim.lr_scheduler import _LRScheduler
 
 from flash.text import QuestionAnsweringTask
 
@@ -25,7 +11,7 @@ class ChaiiQuestionAnswering(QuestionAnsweringTask):
         self,
         backbone: str = "distilbert-base-uncased",
         optimizer: Type[torch.optim.Optimizer] = torch.optim.Adam,
-        scheduler: Optional[Union[Type[_LRScheduler], str, _LRScheduler]] = None,
+        lr_scheduler: Optional[Union[Type[_LRScheduler], str, _LRScheduler]] = None,
         metrics: Union[Callable, Mapping, Sequence, None] = None,
         learning_rate: float = 5e-5,
         enable_ort: bool = False,
@@ -33,7 +19,7 @@ class ChaiiQuestionAnswering(QuestionAnsweringTask):
         super().__init__(
             backbone=backbone,
             optimizer=optimizer,
-            scheduler=scheduler,
+            lr_scheduler=lr_scheduler,
             metrics=metrics,
             learning_rate=learning_rate,
             enable_ort=enable_ort,
