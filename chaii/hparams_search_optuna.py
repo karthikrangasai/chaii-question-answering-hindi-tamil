@@ -33,6 +33,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
     finetuning_strategy = trial.suggest_categorical(
         "finetuning_strategy", ["no_freeze", "freeze"]
     )
+    optimizer = trial.suggest_categorical("optimizer", ["adam", "adamw"])
 
     datamodule = QuestionAnsweringData.from_csv(
         train_file=TRAIN_DATA_PATH,
@@ -44,7 +45,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
     model = ChaiiQuestionAnswering(
         backbone=backbone,
         learning_rate=learning_rate,
-        optimizer=AdamW,
+        optimizer=optimizer,
         enable_ort=False,
     )
 
@@ -60,6 +61,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         batch_size=batch_size,
         backbone=backbone,
         learning_rate=learning_rate,
+        optimizer=optimizer,
         finetuning_strategy=finetuning_strategy,
     )
     trainer.logger.log_hyperparams(hyperparameters)
