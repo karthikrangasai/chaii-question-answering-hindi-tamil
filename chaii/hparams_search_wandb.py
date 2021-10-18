@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 "min": 1e-8,
                 "max": 1,
             },
-            "finetuning": {"values": ["no_freeze", "freeze"]},
+            "finetuning_strategy": {"values": ["no_freeze", "freeze"]},
             "optimizer": {"values": ["adam", "adamw"]},
         },
     }
