@@ -5,7 +5,6 @@ from functools import partial
 import optuna
 
 import torch
-from torch._C import parse_ir
 from torch.optim import Optimizer, Adam, AdamW
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
 
@@ -61,10 +60,11 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         finetuning_strategy=finetuning_strategy,
     )
     trainer.logger.log_hyperparams(hyperparameters)
+
     trainer.finetune(
         model,
         datamodule=datamodule,
-        strategy=_DEFAULTS_FINETUNE_STRATEGIES[finetuning_strategy],
+        strategy=finetuning_strategy,
     )
 
     jaccard_score = trainer.callback_metrics["jaccard_score"].item()
