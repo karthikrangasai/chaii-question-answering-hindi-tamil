@@ -13,7 +13,7 @@ from flash import Trainer
 from flash.core.finetuning import _DEFAULTS_FINETUNE_STRATEGIES
 from flash.text import QuestionAnsweringData
 
-from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH
+from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
 
 EPOCHS = 10
@@ -76,6 +76,8 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--trials", type=int, default=1, required=False)
     parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
     args = parser.parse_args()
+
+    split_dataset()
 
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 

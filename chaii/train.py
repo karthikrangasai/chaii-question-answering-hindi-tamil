@@ -15,11 +15,12 @@ from flash import Trainer
 from flash.text import QuestionAnsweringData
 
 from chaii.src.conf import ChaiiCompetitionConfiguration, WANDBLoggerConfiguration
-from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH
+from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
 
 
 def train(config: ChaiiCompetitionConfiguration, debug: bool = False):
+    split_dataset()
     logger_configuration = WANDBLoggerConfiguration(
         group=f"{config.backbone}",
         job_type=f"{config.operation_type}_{config.max_epochs}_epochs",
