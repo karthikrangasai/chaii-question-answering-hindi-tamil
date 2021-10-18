@@ -1,9 +1,11 @@
-from dataclasses import asdict
+from argparse import ArgumentParser
+from datetime import datetime
+from functools import partial
 
 import optuna
 
 import torch
-
+from torch._C import parse_ir
 from torch.optim import Optimizer, Adam, AdamW
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
 
@@ -17,7 +19,7 @@ from chaii.src.model import ChaiiQuestionAnswering
 EPOCHS = 10
 
 
-def objective(trial: optuna.trial.Trial) -> float:
+def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
 
     # We optimize the number of layers, hidden units in each layer and dropouts.
     batch_size = trial.suggest_categorical("batch_size", [4, 8, 16, 32, 64])
@@ -47,7 +49,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     trainer = Trainer(
         logger=True,
         checkpoint_callback=False,
-        max_epochs=EPOCHS,
+        max_epochs=EPOCHS if num_epochs == 0 else num_epochs,
         gpus=1 if torch.cuda.is_available() else None,
         callbacks=[PyTorchLightningPruningCallback(trial, monitor="jaccard_score")],
     )
@@ -65,16 +67,27 @@ def objective(trial: optuna.trial.Trial) -> float:
         strategy=_DEFAULTS_FINETUNE_STRATEGIES[finetuning_strategy],
     )
 
-    return trainer.callback_metrics["jaccard_score"].item()
+    jaccard_score = trainer.callback_metrics["jaccard_score"].item()
+    return jaccard_score
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-t", "--trails", type=int, default=1, required=False)
+    parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
+    args = parser.parse_args()
+
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 
     study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(objective, n_trials=100, timeout=600)
+    study.optimize(
+        partial(objective, num_epochs=args.epochs),
+        n_trials=args.trials,
+        timeout=600,
+    )
 
-    with open("optuna_hparams_search.txt", "w") as f:
+    time = datetime.now()
+    with open(f"optuna_hparams_search.txt_{time.strftime()}", "w") as f:
         f.write(f"Number of finished trials: {len(study.trials)}\n")
         f.write("Best trial:\n")
         trial = study.best_trial
