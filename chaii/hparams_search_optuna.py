@@ -42,7 +42,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         backbone=backbone,
         learning_rate=learning_rate,
         optimizer=AdamW,
-        enable_ort=True,
+        enable_ort=False,
     )
 
     trainer = Trainer(
