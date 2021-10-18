@@ -21,7 +21,7 @@ EPOCHS = 10
 def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
 
     # We optimize the number of layers, hidden units in each layer and dropouts.
-    batch_size = trial.suggest_categorical("batch_size", [4, 8, 16, 32, 64])
+    batch_size = trial.suggest_categorical("batch_size", [4, 8, 16])
     backbone = trial.suggest_categorical(
         "backbone",
         ["xlm-roberta-base", "deepset/xlm-roberta-base-squad2", "ai4bharat/indic-bert"],
