@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from functools import partial
 import os
+import time
 
 import optuna
 import pandas as pd
@@ -21,7 +22,9 @@ from chaii.src.model import ChaiiQuestionAnswering
 EPOCHS = 10
 
 
-def objective(trial: optuna.trial.Trial, num_epochs: int, monitor: str) -> float:
+def objective(
+    trial: optuna.trial.Trial, num_epochs: int, monitor: str, direction: str
+) -> float:
 
     # We optimize the number of layers, hidden units in each layer and dropouts.
     batch_size = trial.suggest_categorical("batch_size", [4, 8, 16])
@@ -67,11 +70,16 @@ def objective(trial: optuna.trial.Trial, num_epochs: int, monitor: str) -> float
     )
     trainer.logger.log_hyperparams(hyperparameters)
 
-    trainer.finetune(
-        model,
-        datamodule=datamodule,
-        strategy=finetuning_strategy,
-    )
+    try:
+        trainer.finetune(
+            model,
+            datamodule=datamodule,
+            strategy=finetuning_strategy,
+        )
+    except RuntimeError:
+        if direction == "minimize":
+            return 100.0
+        return -1.0
 
     value = trainer.callback_metrics[monitor].item()
     return value
@@ -99,9 +107,13 @@ if __name__ == "__main__":
     split_dataset()
 
     if args.sampler == "random":
-        sampler: optuna.samplers.RandomSampler = optuna.samplers.RandomSampler(seed=42)
+        sampler: optuna.samplers.RandomSampler = optuna.samplers.RandomSampler(
+            seed=int(time.time())
+        )
     elif args.sampler == "tpe":
-        sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=42)
+        sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(
+            seed=int(time.time())
+        )
 
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 
@@ -109,7 +121,12 @@ if __name__ == "__main__":
         direction=args.direction, sampler=sampler, pruner=pruner
     )
     study.optimize(
-        partial(objective, num_epochs=args.epochs, monitor=args.monitor),
+        partial(
+            objective,
+            num_epochs=args.epochs,
+            monitor=args.monitor,
+            direction=args.direction,
+        ),
         n_trials=args.trials,
         gc_after_trial=True,
     )

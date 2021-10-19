@@ -15,7 +15,7 @@ from chaii.src.model import ChaiiQuestionAnswering
 EPOCHS = 10
 
 
-def sweep_iteration(num_epochs: int) -> float:
+def sweep_iteration(num_epochs: int, monitor: str, direction: str) -> float:
     with wandb.init() as run:
         config = run.config
 
@@ -56,11 +56,16 @@ def sweep_iteration(num_epochs: int) -> float:
         )
         trainer.logger.log_hyperparams(hyperparameters)
 
-        trainer.finetune(
-            model,
-            datamodule=datamodule,
-            strategy=finetuning_strategy,
-        )
+        try:
+            trainer.finetune(
+                model,
+                datamodule=datamodule,
+                strategy=finetuning_strategy,
+            )
+        except RuntimeError:
+            if direction == "minimize":
+                return wandb.log({monitor: 100.0})
+            return wandb.log({monitor: -1.0})
 
 
 if __name__ == "__main__":
@@ -114,7 +119,12 @@ if __name__ == "__main__":
     sweep_id = wandb.sweep(SWEEP_CONFIG, project="chaii-competition")
     wandb.agent(
         sweep_id,
-        function=partial(sweep_iteration, num_epochs=args.epochs),
+        function=partial(
+            sweep_iteration,
+            num_epochs=args.epochs,
+            monitor=args.monitor,
+            direction=args.direction,
+        ),
         project="chaii-competition",
         count=args.trials,
     )
