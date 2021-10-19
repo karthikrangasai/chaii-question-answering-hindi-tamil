@@ -1,9 +1,9 @@
 from argparse import ArgumentParser
-from datetime import datetime
 from functools import partial
 import os
 
 import optuna
+import pandas as pd
 
 import torch
 from torch.optim import Optimizer, Adam, AdamW
@@ -21,7 +21,7 @@ from chaii.src.model import ChaiiQuestionAnswering
 EPOCHS = 10
 
 
-def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
+def objective(trial: optuna.trial.Trial, num_epochs: int, monitor: str) -> float:
 
     # We optimize the number of layers, hidden units in each layer and dropouts.
     batch_size = trial.suggest_categorical("batch_size", [4, 8, 16])
@@ -55,7 +55,7 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         checkpoint_callback=False,
         max_epochs=EPOCHS if num_epochs == 0 else num_epochs,
         gpus=1 if torch.cuda.is_available() else None,
-        callbacks=[PyTorchLightningPruningCallback(trial, monitor="jaccard_score")],
+        callbacks=[PyTorchLightningPruningCallback(trial, monitor=monitor)],
     )
 
     hyperparameters = dict(
@@ -73,32 +73,59 @@ def objective(trial: optuna.trial.Trial, num_epochs: int) -> float:
         strategy=finetuning_strategy,
     )
 
-    jaccard_score = trainer.callback_metrics["jaccard_score"].item()
-    return jaccard_score
+    value = trainer.callback_metrics[monitor].item()
+    return value
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    parser.add_argument("-m", "--monitor", type=str, required=True)
+    parser.add_argument(
+        "-d", "--direction", type=str, required=True, choices=["maximize", "minimize"]
+    )
     parser.add_argument("-t", "--trials", type=int, default=1, required=False)
     parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
+    parser.add_argument(
+        "-s",
+        "--sampler",
+        type=str,
+        default="random",
+        required=False,
+        choices=["random", "tpe"],
+    )
     args = parser.parse_args()
 
     seed_everything(42)
     split_dataset()
 
-    sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=42)
+    if args.sampler == "random":
+        sampler: optuna.samplers.RandomSampler = optuna.samplers.RandomSampler(seed=42)
+    elif args.sampler == "tpe":
+        sampler: optuna.samplers.TPESampler = optuna.samplers.TPESampler(seed=42)
+
     pruner: optuna.pruners.BasePruner = optuna.pruners.MedianPruner()
 
-    study = optuna.create_study(direction="maximize", sampler=sampler, pruner=pruner)
+    study = optuna.create_study(
+        direction=args.direction, sampler=sampler, pruner=pruner
+    )
     study.optimize(
-        partial(objective, num_epochs=args.epochs),
+        partial(objective, num_epochs=args.epochs, monitor=args.monitor),
         n_trials=args.trials,
-        timeout=600,
         gc_after_trial=True,
     )
 
+    trials_df: pd.DataFrame = study.trials_dataframe()
+    trials_df.to_csv(
+        path=os.path.join(
+            OPTUNA_LOGS_PATH, f"{study._study_id}_{args.monitor}_{args.direction}.csv"
+        )
+    )
+
     with open(
-        os.path.join(OPTUNA_LOGS_PATH, f"optuna_hparams_search_{datetime.now()}.txt"),
+        os.path.join(
+            OPTUNA_LOGS_PATH,
+            f"optuna_hparams_search_{study._study_id}_{args.monitor}_{args.direction}.txt",
+        ),
         "w",
     ) as f:
         f.write(f"Number of finished trials: {len(study.trials)}\n")

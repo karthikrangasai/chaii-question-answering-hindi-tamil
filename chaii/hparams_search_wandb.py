@@ -62,22 +62,31 @@ def sweep_iteration(num_epochs: int) -> float:
             strategy=finetuning_strategy,
         )
 
-        jaccard_score = trainer.callback_metrics["jaccard_score"].item()
-        return jaccard_score
-
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    parser.add_argument("-m", "--monitor", type=str, required=True)
+    parser.add_argument(
+        "-d", "--direction", type=str, required=True, choices=["maximize", "minimize"]
+    )
     parser.add_argument("-t", "--trials", type=int, default=1, required=False)
     parser.add_argument("-e", "--epochs", type=int, default=0, required=False)
+    parser.add_argument(
+        "-s",
+        "--sampler",
+        type=str,
+        default="random",
+        required=False,
+        choices=["random", "grid", "bayes"],
+    )
     args = parser.parse_args()
 
     SWEEP_CONFIG = {
-        "method": "random",  # Random search
+        "method": args.sampler,  # Random search
         "metric": {
             # We want to maximize val_accuracy
-            "name": "jaccard_score",
-            "goal": "maximize",
+            "name": args.monitor,
+            "goal": args.direction,
         },
         "parameters": {
             "backbone": {
