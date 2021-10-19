@@ -1,14 +1,17 @@
 from argparse import ArgumentParser
+from dataclasses import asdict
 from functools import partial
 
 import wandb
 
 import torch
 from pytorch_lightning import seed_everything
+from pytorch_lightning.loggers import WandbLogger
 
 from flash import Trainer
 from flash.text import QuestionAnsweringData
 
+from chaii.src.conf import WANDBLoggerConfiguration
 from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
 
@@ -41,20 +44,26 @@ def sweep_iteration(num_epochs: int, monitor: str, direction: str) -> float:
             enable_ort=False,
         )
 
+        # Setup Logger
+        logger_configuration = WANDBLoggerConfiguration(
+            group=f"{backbone}",
+            job_type=f"sweep_{num_epochs}_epochs",
+            name=f"{optimizer}_{learning_rate}_{finetuning_strategy}_{batch_size}",
+            config=asdict(config),
+        )
+
+        wandb_logger = WandbLogger(
+            project="chaii-competition",
+            log_model=True,
+            **asdict(logger_configuration),
+        )
+
         trainer = Trainer(
-            logger=True,
+            logger=wandb_logger,
             checkpoint_callback=False,
             max_epochs=EPOCHS if num_epochs == 0 else num_epochs,
             gpus=1 if torch.cuda.is_available() else None,
         )
-
-        hyperparameters = dict(
-            batch_size=batch_size,
-            backbone=backbone,
-            learning_rate=learning_rate,
-            finetuning_strategy=finetuning_strategy,
-        )
-        trainer.logger.log_hyperparams(hyperparameters)
 
         try:
             trainer.finetune(
