@@ -7,12 +7,10 @@ import optuna
 import pandas as pd
 
 import torch
-from torch.optim import Optimizer, Adam, AdamW
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
 from pytorch_lightning import seed_everything
 
 from flash import Trainer
-from flash.core.finetuning import _DEFAULTS_FINETUNE_STRATEGIES
 from flash.text import QuestionAnsweringData
 from chaii import OPTUNA_LOGS_PATH
 
@@ -104,7 +102,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     seed_everything(42)
-    split_dataset()
+    if not (os.path.exists(TRAIN_DATA_PATH) and os.path.exists(VAL_DATA_PATH)):
+        split_dataset()
 
     if args.sampler == "random":
         sampler: optuna.samplers.RandomSampler = optuna.samplers.RandomSampler(

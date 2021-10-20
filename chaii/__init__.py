@@ -5,18 +5,15 @@ PROJECT_ROOT_PATH = os.path.dirname(CHAII_ROOT_PATH)
 
 DATA_FOLDER_PATH = os.path.join(PROJECT_ROOT_PATH, "data")
 
-MODEL_CHECKPOINT_PATH = os.path.join(PROJECT_ROOT_PATH, "model_checkpoints")
+if not os.path.exists(os.path.join(PROJECT_ROOT_PATH, "my_logs")):
+    os.mkdir(os.path.join(PROJECT_ROOT_PATH, "my_logs"))
 
-OPTUNA_LOGS_PATH = os.path.join(PROJECT_ROOT_PATH, "optuna", "logs")
+OPTUNA_LOGS_PATH = os.path.join(PROJECT_ROOT_PATH, "my_logs", "optuna")
+LR_RANGE_TEST_FIGS_PATH = os.path.join(PROJECT_ROOT_PATH, "my_logs", "lr_range_tests")
 
-if not os.path.exists(MODEL_CHECKPOINT_PATH):
-    os.mkdir(MODEL_CHECKPOINT_PATH)
-
-if not os.path.exists(OPTUNA_LOGS_PATH):
-    optuna_dir = os.path.join(PROJECT_ROOT_PATH, "optuna")
-    if not os.path.exists(optuna_dir):
-        os.mkdir(optuna_dir)
-    os.mkdir(OPTUNA_LOGS_PATH)
+for path in [OPTUNA_LOGS_PATH, LR_RANGE_TEST_FIGS_PATH]:
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 TODO = [
     "Combine Datasets",

@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from dataclasses import asdict
 from functools import partial
 
+import os
 import wandb
 
 import torch
@@ -49,7 +50,6 @@ def sweep_iteration(num_epochs: int, monitor: str, direction: str) -> float:
             group=f"{backbone}",
             job_type=f"sweep_{num_epochs}_epochs",
             name=f"{optimizer}_{learning_rate}_{finetuning_strategy}_{batch_size}",
-            config=asdict(config),
         )
 
         wandb_logger = WandbLogger(
@@ -122,7 +122,8 @@ if __name__ == "__main__":
     }
 
     seed_everything(42)
-    split_dataset()
+    if not (os.path.exists(TRAIN_DATA_PATH) and os.path.exists(VAL_DATA_PATH)):
+        split_dataset()
 
     wandb.login()
     sweep_id = wandb.sweep(SWEEP_CONFIG, project="chaii-competition")
