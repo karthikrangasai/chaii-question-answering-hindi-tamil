@@ -50,6 +50,13 @@ def sweep_iteration(num_epochs: int, monitor: str, direction: str) -> float:
             group=f"{backbone}",
             job_type=f"sweep_{num_epochs}_epochs",
             name=f"{optimizer}_{learning_rate}_{finetuning_strategy}_{batch_size}",
+            config=dict(
+                batch_size=batch_size,
+                backbone=backbone,
+                learning_rate=learning_rate,
+                finetuning_strategy=finetuning_strategy,
+                optimizer=optimizer,
+            ),
         )
 
         wandb_logger = WandbLogger(
