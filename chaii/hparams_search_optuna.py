@@ -30,7 +30,7 @@ def objective(
         "backbone",
         ["xlm-roberta-base", "deepset/xlm-roberta-base-squad2", "ai4bharat/indic-bert"],
     )
-    learning_rate = trial.suggest_uniform("learning_rate", 1e-8, 1)
+    learning_rate = trial.suggest_loguniform("learning_rate", 1e-2, 1e-6)
     finetuning_strategy = trial.suggest_categorical(
         "finetuning_strategy", ["no_freeze", "freeze"]
     )

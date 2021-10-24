@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from dataclasses import asdict
 
 import wandb
@@ -12,6 +13,7 @@ from pytorch_lightning.callbacks import (
 from pytorch_lightning.loggers import WandbLogger
 
 from flash import Trainer
+from flash.core.utilities.types import OPTIMIZER_TYPE, LR_SCHEDULER_TYPE
 from flash.text import QuestionAnsweringData
 
 
@@ -20,8 +22,40 @@ from chaii.src.data import TRAIN_DATA_PATH, VAL_DATA_PATH, split_dataset
 from chaii.src.model import ChaiiQuestionAnswering
 
 
-def train(config: ChaiiCompetitionConfiguration, debug: bool = False):
+def train():
     seed_everything(42)
+
+    parser = ArgumentParser()
+    parser.add_argument("--train_val_split", default=0.1, type=float)
+    parser.add_argument("--batch_size", default=8, type=int)
+
+    parser.add_argument(
+        "--backbone", default="xlm-roberta-base", type=str, required=False
+    )
+    parser.add_argument("--learning_rate", default=2e-7, type=float)
+    parser.add_argument("--optimizer", default="adamw", type=OPTIMIZER_TYPE)
+    parser.add_argument("--scheduler", default=None, type=LR_SCHEDULER_TYPE)
+    parser.add_argument("--operation_type", default="train", type=str)
+    parser.add_argument("--max_epochs", default=10, type=int)
+    parser.add_argument(
+        "--finetuning_strategy", default="no_freeze", type=str, required=False
+    )
+    parser.add_argument("--debug", default=False, type=bool, required=False)
+
+    args = parser.parse_args()
+
+    config = ChaiiCompetitionConfiguration(
+        train_val_split=args.train_val_split,
+        batch_size=args.batch_size,
+        backbone=args.backbone,
+        learning_rate=args.learning_rate,
+        optimizer=args.optimizer,
+        scheduler=args.scheduler,
+        operation_type=args.operation_type,
+        max_epochs=args.max_epochs,
+        finetuning_strategy=args.finetuning_strateg,
+    )
+
     split_dataset()
     logger_configuration = WANDBLoggerConfiguration(
         group=f"{config.backbone}",
@@ -67,7 +101,7 @@ def train(config: ChaiiCompetitionConfiguration, debug: bool = False):
         callbacks.append(lr_monitor)
 
     trainer = Trainer(
-        fast_dev_run=debug,
+        fast_dev_run=args.debug,
         gpus=config.num_gpus,
         logger=wandb_logger,
         callbacks=callbacks,
@@ -85,3 +119,7 @@ def train(config: ChaiiCompetitionConfiguration, debug: bool = False):
             model, datamodule=datamodule, strategy=config.finetuning_strategy
         )
     wandb.finish()
+
+
+if __name__ == "__main__":
+    train()
